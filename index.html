@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fuel Metabolism · Group Session</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1A3A5C;--teal:#2E86AB;--amber:#BA7517;
+  --red:#A32D2D;--green:#0F6E56;--purple:#534AB7;
+  --text:#18212C;--muted:#5A6A78;--faint:#8A9AAA;
+  --border:#D5E2EE;--bg:#F2F6FB;--card:#FFFFFF;
+  --correct-bg:#EEF7F2;--correct:#0F6E56;
+  --wrong-bg:#FCEBEB;--wrong:#A32D2D;
+  --pending-bg:#FEF9EC;--pending:#854F0B;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+h1{font-size:1.5rem;font-weight:700;color:var(--navy)}
+h2{font-size:1.15rem;font-weight:600;color:var(--navy)}
+p{font-size:.95rem;color:var(--text);line-height:1.65}
+.view{display:none;min-height:100vh}
+.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.badge{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.06em;padding:3px 10px;border-radius:20px;margin-bottom:.6rem;text-transform:uppercase}
+.badge-gray{background:#EDF1F5;color:var(--muted)}
+.badge-red{background:#FCEBEB;color:var(--red)}
+.badge-amber{background:#FEF3E0;color:var(--amber)}
+.badge-blue{background:#E6F1FB;color:#185FA5}
+.badge-green{background:#EEF7F2;color:var(--green)}
+.badge-purple{background:#EEEDFE;color:var(--purple)}
+.vitals{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:.75rem 0}
+.vital{background:var(--bg);border-radius:8px;padding:8px 10px}
+.vital-label{font-size:.68rem;color:var(--faint);margin-bottom:2px;text-transform:uppercase;letter-spacing:.04em}
+.vital-val{font-size:1.05rem;font-weight:600;color:var(--text)}
+.vital-val.bad{color:var(--red)}
+.vital-val.warn{color:var(--amber)}
+.mcq-option{display:block;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:.85rem 1rem;margin-bottom:.5rem;font-size:.93rem;color:var(--text);cursor:pointer;transition:border-color .15s,background .15s;font-family:inherit}
+.mcq-option:hover:not(:disabled){border-color:var(--teal);background:#F0F8FC}
+.mcq-option.chosen{border-color:var(--navy);background:#EDF4FB;color:var(--navy);font-weight:500}
+.mcq-option.reveal-correct{border-color:var(--correct)!important;background:var(--correct-bg)!important;color:var(--correct)!important;font-weight:600}
+.mcq-option.reveal-wrong{border-color:var(--wrong)!important;background:var(--wrong-bg)!important;color:var(--wrong)!important}
+.mcq-option:disabled{cursor:default;opacity:1}
+textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:.75rem 1rem;font-size:.9rem;font-family:inherit;color:var(--text);resize:vertical;min-height:90px;background:var(--card)}
+textarea:focus{outline:none;border-color:var(--teal)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:none;border-radius:8px;padding:.7rem 1.25rem;font-size:.95rem;font-weight:500;cursor:pointer;font-family:inherit}
+.btn:disabled{opacity:.35;cursor:default}
+.btn-navy{background:var(--navy);color:#fff}
+.btn-navy:hover:not(:disabled){background:#0D2035}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-teal:hover:not(:disabled){background:#1B6F94}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.btn-outline:hover{background:var(--bg)}
+.btn-full{width:100%;justify-content:center}
+.banner{border-radius:10px;padding:.7rem 1rem;margin:.75rem 0;font-size:.88rem;line-height:1.6}
+.b-pending{background:var(--pending-bg);border:1px solid #EF9F27;color:var(--pending)}
+.b-correct{background:var(--correct-bg);border:1px solid #5DCAA5;color:var(--correct);font-weight:500}
+.b-wrong{background:var(--wrong-bg);border:1px solid #F09595;color:var(--wrong);font-weight:500}
+.b-info{background:#E6F1FB;border:1px solid #85B7EB;color:#185FA5}
+.explanation{background:var(--bg);border-left:4px solid var(--teal);border-radius:0 8px 8px 0;padding:1rem;margin-top:.65rem;font-size:.88rem;line-height:1.7}
+.explanation ul{padding-left:1.2rem;margin-top:.4rem}
+.explanation li{margin-bottom:.3rem}
+.q-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-top:.75rem}
+.q-label{font-size:.7rem;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:.5rem}
+.q-text{font-size:.97rem;font-weight:500;color:var(--text);margin-bottom:1rem;line-height:1.55}
+.disc-prompt{font-size:.88rem;color:var(--muted);margin-bottom:.75rem;line-height:1.6;font-style:italic}
+
+/* ── JOIN ── */
+#join-view{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.25rem}
+.join-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem 1.75rem;width:100%;max-width:400px;box-shadow:0 6px 28px rgba(26,58,92,.1)}
+.join-brand{font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin-bottom:.9rem}
+.join-sub{font-size:.9rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.55}
+input[type=text],input[type=password]{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.7rem .9rem;font-size:.95rem;font-family:inherit;color:var(--text);background:var(--card);margin-bottom:.6rem;display:block}
+input:focus{outline:none;border-color:var(--teal)}
+.fac-link{font-size:.8rem;color:var(--faint);text-align:center;margin-top:.9rem;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+#fac-login-box{display:none;margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border)}
+.err{color:var(--red);font-size:.83rem;margin-top:.4rem;display:none}
+
+/* ── WAIT ── */
+#wait-view{padding:1.5rem 1.25rem;max-width:500px;margin:0 auto}
+.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--teal);animation:pulse 1.4s ease infinite;vertical-align:middle;margin-right:6px}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.75)}}
+.joined-list{list-style:none;margin-top:.6rem}
+.joined-list li{padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.9rem;display:flex;align-items:center;gap:8px}
+.dot-live{width:8px;height:8px;border-radius:50%;background:#1D9E75;flex-shrink:0}
+.dot-off{width:8px;height:8px;border-radius:50%;background:#B0BEC5;flex-shrink:0}
+
+/* ── STUDENT SESSION ── */
+.topbar{background:var(--navy);padding:.7rem 1.25rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+.topbar-name{font-size:.82rem;color:#B8D0E8;font-weight:500}
+.sdots{display:flex;gap:5px}
+.sdot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.18)}
+.sdot.done{background:#4DCAA0}
+.sdot.active{background:#F5A623}
+.s-content{padding:1.25rem;max-width:600px;margin:0 auto}
+.sep{height:1px;background:var(--border);margin:.9rem 0}
+
+/* ── FACILITATOR ── */
+.fac-shell{display:flex;min-height:100vh;background:#0F1C2B;color:#E8F0F8}
+.fac-sidebar{width:270px;flex-shrink:0;background:#0A1520;border-right:1px solid #1E3450;padding:1.25rem;overflow-y:auto}
+.fac-main{flex:1;padding:1.5rem;overflow-y:auto}
+.fac-h{font-size:1rem;font-weight:600;color:#E8F0F8;margin-bottom:1rem}
+.fac-card{background:#162232;border:1px solid #1E3450;border-radius:10px;padding:1rem;margin-bottom:.75rem}
+.fac-label{font-size:.68rem;font-weight:700;letter-spacing:.07em;color:#4A6A8A;text-transform:uppercase;margin-bottom:.35rem}
+.fac-big{font-size:1.6rem;font-weight:700;color:#E8F0F8}
+.fac-btn{display:block;width:100%;text-align:center;border:none;border-radius:8px;padding:.6rem 1rem;font-size:.88rem;font-weight:500;cursor:pointer;margin-bottom:.45rem;font-family:inherit}
+.fac-btn:disabled{opacity:.28;cursor:default}
+.fb-blue{background:#2E86AB;color:#fff}
+.fb-blue:hover:not(:disabled){background:#1B6F94}
+.fb-green{background:#1E7B4B;color:#fff}
+.fb-green:hover:not(:disabled){background:#0F6E56}
+.fb-danger{background:rgba(163,45,45,.7);color:#F7C1C1;border:1px solid #A32D2D}
+.fb-danger:hover:not(:disabled){background:rgba(163,45,45,.9)}
+.fb-amber{background:#854F0B;color:#FEF9EC}
+.fb-amber:hover:not(:disabled){background:#633806}
+.s-row{display:flex;align-items:center;gap:7px;padding:.45rem 0;border-bottom:1px solid #1E3450}
+.s-row:last-child{border-bottom:none}
+.s-name{font-size:.85rem;color:#C8D8E8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap{font-size:.68rem;font-weight:700;padding:2px 6px;border-radius:8px;background:#1E3450;color:#7AA0C0;margin-left:2px}
+.ap.ok{background:#0A3020;color:#4DCAA0}
+.ap.no{background:#3A1018;color:#F09595}
+.ap.sub{background:#0A2035;color:#5AA0D0}
+.dist-row{display:flex;align-items:center;gap:7px;margin:.2rem 0}
+.dist-lbl{font-size:.78rem;color:#7AA0C0;width:14px;font-weight:700;flex-shrink:0}
+.dist-track{flex:1;background:#1E3450;border-radius:3px;height:14px;overflow:hidden;min-width:0}
+.dist-fill{height:100%;border-radius:3px;background:#2E86AB;transition:width .5s}
+.dist-fill.cf{background:#1D9E75}
+.dist-n{font-size:.72rem;color:#4A6A8A;min-width:16px;text-align:right;flex-shrink:0}
+.fac-note-box{margin-top:.6rem;padding:.55rem .75rem;background:#0A1520;border-radius:6px;border-left:3px solid #BA7517}
+.fac-note-lbl{font-size:.65rem;font-weight:700;color:#BA7517;letter-spacing:.06em;text-transform:uppercase;margin-bottom:.25rem}
+.fac-note-text{font-size:.78rem;color:#7A9ABB;line-height:1.55}
+.disc-resp{background:#0A1520;border-radius:6px;padding:.55rem .75rem;margin-bottom:.4rem}
+.disc-resp-name{font-size:.72rem;color:#4DCAA0;font-weight:700;margin-bottom:.2rem}
+.disc-resp-text{font-size:.8rem;color:#A0B8CC;line-height:1.55}
+.reveal-done{font-size:.78rem;color:#4DCAA0;display:flex;align-items:center;gap:4px}
+
+/* ── SETUP SCREEN ── */
+#setup-view{padding:2rem 1.25rem;max-width:600px;margin:0 auto}
+.setup-step{display:flex;gap:.75rem;margin-bottom:.9rem}
+.setup-num{width:24px;height:24px;border-radius:50%;background:var(--navy);color:#fff;font-size:.8rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.code{font-family:monospace;background:#EDF1F5;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.85rem;color:var(--navy);word-break:break-all}
+
+@media(max-width:640px){
+  .fac-shell{flex-direction:column}
+  .fac-sidebar{width:100%;max-height:45vh;border-right:none;border-bottom:1px solid #1E3450}
+  .vitals{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SETUP VIEW (shown when Firebase URL not set)   -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="view" id="setup-view">
+  <div style="padding:2rem 1.25rem;max-width:600px;margin:0 auto">
+    <div class="card">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin-bottom:.75rem">One-time setup needed</div>
+      <h1 style="margin-bottom:.4rem">Connect to Firebase</h1>
+      <p style="color:var(--muted);margin-bottom:1.25rem">This app needs a free Firebase database so students can sync in real time. Takes about 5 minutes — you only do this once.</p>
+      <div class="setup-step">
+        <div class="setup-num">1</div>
+        <div><p>Go to <strong>console.firebase.google.com</strong> and click <strong>Add project</strong>. Name it anything (e.g. "metabolism-session"). Skip Google Analytics.</p></div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">2</div>
+        <div><p>In the left sidebar, click <strong>Build → Realtime Database → Create database</strong>. Choose <strong>"Start in test mode"</strong>. Pick any region. Click Done.</p></div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">3</div>
+        <div><p>You'll see a URL at the top of the page. It looks like:<br><span class="code">https://metabolism-session-xxxxx-default-rtdb.firebaseio.com</span><br>Copy this URL.</p></div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">4</div>
+        <div><p>Open this HTML file in a text editor (Notepad / VS Code). Find the line near the bottom that says <span class="code">const FB_URL = "https://fuel-metabolism-default-rtdb.asia-southeast1.firebasedatabase.app"</span> and paste your URL in place of the placeholder. Save the file.</p></div>
+      </div>
+      <div class="setup-step">
+        <div class="setup-num">5</div>
+        <div><p>Go to <strong>netlify.com/drop</strong> — drag this HTML file into the browser window. You'll get a shareable link in seconds. Share it via Teams.</p></div>
+      </div>
+      <div style="background:#EEF7F2;border:1px solid #5DCAA5;border-radius:8px;padding:.85rem 1rem;margin-top:.5rem">
+        <p style="font-size:.88rem;color:var(--green);line-height:1.65"><strong>Default facilitator password:</strong> <span class="code">teach2024</span> — change the <span class="code">FAC_PASS</span> variable in the file if you want a different one.<br><strong>Note:</strong> Firebase test mode lasts 30 days — plenty of time for your session.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- JOIN VIEW                                       -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="view" id="join-view">
+  <div id="join-inner" style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:1.25rem">
+    <div class="join-box">
+      <div class="join-brand">Deakin MD2 · Musculoskeletal &amp; Metabolism</div>
+      <h1 style="margin-bottom:.3rem">Fuel Metabolism</h1>
+      <p class="join-sub">Group learning session — enter your name to join</p>
+      <input type="text" id="join-name" placeholder="Your name" autocomplete="off" autocapitalize="words">
+      <button class="btn btn-navy btn-full" onclick="joinAsStudent()">Join Session →</button>
+      <p class="err" id="join-err"></p>
+      <div class="fac-link" onclick="toggleFacLogin()">Facilitator? Enter here</div>
+      <div id="fac-login-box">
+        <input type="password" id="fac-pass" placeholder="Facilitator password" style="margin-top:.5rem">
+        <button class="btn btn-outline btn-full" onclick="joinAsFacilitator()">Open Dashboard →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- WAIT VIEW                                       -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="view" id="wait-view">
+  <div style="padding:1.75rem 1.25rem;max-width:480px;margin:0 auto">
+    <div class="card">
+      <div style="font-size:.72rem;font-weight:700;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Session lobby</div>
+      <h2 id="wait-greeting" style="margin-bottom:.3rem">Welcome!</h2>
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:.9rem">Session hasn't started yet — hang tight.</p>
+      <div style="display:flex;align-items:center;gap:.5rem;color:var(--teal);font-size:.9rem">
+        <span class="pulse"></span>Waiting for facilitator to start...
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-size:.72rem;font-weight:700;color:var(--faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Who's joined</div>
+      <ul class="joined-list" id="lobby-list"><li><span class="dot-off"></span>Loading...</li></ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- STUDENT SESSION VIEW                           -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="view" id="student-view">
+  <div class="topbar">
+    <span class="topbar-name" id="topbar-name">—</span>
+    <div class="sdots" id="sdots"></div>
+  </div>
+  <div class="s-content" id="s-content"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- FACILITATOR VIEW                               -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="view" id="fac-view">
+  <div class="fac-shell">
+    <div class="fac-sidebar">
+      <div class="fac-h">Session Control</div>
+      <div class="fac-card" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div class="fac-label">Online</div><div class="fac-big" id="fc-online">0</div></div>
+        <div><div class="fac-label">Scene</div><div class="fac-big" id="fc-scene">—</div></div>
+      </div>
+      <button class="fac-btn fb-blue" id="btn-start" onclick="facStart()">▶ Start Session</button>
+      <button class="fac-btn fb-blue" id="btn-next" onclick="facNext()" disabled>Next Scene →</button>
+      <button class="fac-btn fb-danger" onclick="facReset()" style="margin-top:.25rem">↺ Reset Session</button>
+      <div style="height:1px;background:#1E3450;margin:.85rem 0"></div>
+      <div class="fac-label">Students</div>
+      <div id="fc-roster"><p style="font-size:.8rem;color:#4A6A8A">Waiting...</p></div>
+    </div>
+    <div class="fac-main" id="fc-main">
+      <p style="color:#4A6A8A;font-size:.9rem">Press ▶ Start to begin. Students are in the lobby.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// CONFIGURATION — edit these two values
+// ══════════════════════════════════════════════════════════
+const FB_URL   = "https://fuel-metabolism-default-rtdb.asia-southeast1.firebasedatabase.app";  // ← replace with your Firebase Realtime DB URL
+const FAC_PASS = "teach2024";                       // ← change to your preferred password
+const SESSION  = "s1";                              // ← increment (s2, s3...) to start a fresh session
+
+// ══════════════════════════════════════════════════════════
+// CASE CONTENT
+// ══════════════════════════════════════════════════════════
+const SCENES = [
+  // ── INTRO ──────────────────────────────────────────────────────────────────
+  {
+    id:0, badge:"Welcome", badgeClass:"badge-gray",
+    title:"Today's Session — Fuel Metabolism",
+    body:`<p>We're going to work through <strong>four key metabolic pathways</strong> using a real patient case. For each pathway you'll get a teaching slide first, then a quick MCQ to test your understanding.</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:.85rem 0">
+  <div style="background:#FEF3E0;border:1px solid #EF9F27;border-radius:8px;padding:.75rem"><p style="font-size:.85rem;color:#633806;line-height:1.6"><strong>⚡ Beta Oxidation</strong><br>How fat is broken down for energy</p></div>
+  <div style="background:#EEF7F2;border:1px solid #5DCAA5;border-radius:8px;padding:.75rem"><p style="font-size:.85rem;color:#085041;line-height:1.6"><strong>🔄 Cori Cycle</strong><br>How muscle lactate becomes liver glucose</p></div>
+  <div style="background:#E6F1FB;border:1px solid #85B7EB;border-radius:8px;padding:.75rem"><p style="font-size:.85rem;color:#0C447C;line-height:1.6"><strong>🏭 Gluconeogenesis</strong><br>How the liver makes glucose from scratch</p></div>
+  <div style="background:#FCEBEB;border:1px solid #F09595;border-radius:8px;padding:.75rem"><p style="font-size:.85rem;color:#791F1F;line-height:1.6"><strong>💊 Adrenergic Response</strong><br>How stress hormones mobilise fuel</p></div>
+</div>
+<p style="font-size:.9rem;color:var(--muted);margin-top:.5rem">Follow along on your screen. Answer the MCQs individually — no peeking! The facilitator will reveal answers and lead discussion.</p>`,
+    vitals:[], questions:[]
+  },
+
+  // ── BETA OXIDATION: TEACH ──────────────────────────────────────────────────
+  {
+    id:1, badge:"⚡ Beta Oxidation — Teaching", badgeClass:"badge-amber",
+    title:"Beta Oxidation: How We Burn Fat",
+    body:`
+<div style="background:#FEF9EC;border-left:4px solid #BA7517;border-radius:0 8px 8px 0;padding:.85rem 1rem;margin-bottom:.85rem">
+  <p style="font-size:.88rem;color:#633806;font-weight:600;margin-bottom:.25rem">The big idea</p>
+  <p style="font-size:.9rem;color:#633806;line-height:1.65">Beta oxidation is how your body <strong>breaks fat down into energy</strong>. Fatty acids are chopped into 2-carbon pieces, each producing ATP. Think of it like cutting a long chain into small links — each cut gives you fuel.</p>
+</div>
+
+<div style="margin-bottom:.85rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Where does it happen?</p>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div style="background:#FEF3E0;border:1px solid #EF9F27;border-radius:8px;padding:.5rem .85rem;font-size:.85rem;color:#633806">🏠 Mitochondrial matrix</div>
+    <div style="font-size:.8rem;color:var(--muted)">requires</div>
+    <div style="background:#FEF3E0;border:1px solid #EF9F27;border-radius:8px;padding:.5rem .85rem;font-size:.85rem;color:#633806">🚪 Carnitine shuttle (CPT-I)</div>
+  </div>
+</div>
+
+<div style="margin-bottom:.85rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">The 4-step cycle (repeats until only acetyl-CoA remains)</p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.83rem;line-height:1.55"><strong style="color:#BA7517">Step 1</strong> — Oxidation<br><span style="color:var(--muted)">FAD → FADH₂</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.83rem;line-height:1.55"><strong style="color:#BA7517">Step 2</strong> — Hydration<br><span style="color:var(--muted)">+ H₂O added</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.83rem;line-height:1.55"><strong style="color:#BA7517">Step 3</strong> — Oxidation<br><span style="color:var(--muted)">NAD⁺ → NADH</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.83rem;line-height:1.55"><strong style="color:#BA7517">Step 4</strong> — Thiolysis<br><span style="color:var(--muted)">→ 1 Acetyl-CoA released</span></p></div>
+  </div>
+</div>
+
+<div style="margin-bottom:.75rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Each cycle produces</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <div style="background:#FEF3E0;border-radius:20px;padding:4px 12px;font-size:.83rem;color:#633806;font-weight:500">1 FADH₂</div>
+    <div style="background:#FEF3E0;border-radius:20px;padding:4px 12px;font-size:.83rem;color:#633806;font-weight:500">1 NADH</div>
+    <div style="background:#FEF3E0;border-radius:20px;padding:4px 12px;font-size:.83rem;color:#633806;font-weight:500">1 Acetyl-CoA</div>
+  </div>
+</div>
+
+<div style="background:#FCEBEB;border:1px solid #F09595;border-radius:8px;padding:.75rem">
+  <p style="font-size:.83rem;color:#791F1F;line-height:1.65"><strong>🔑 Master switch — malonyl-CoA:</strong> When insulin is high (fed state) → malonyl-CoA is high → <strong>CPT-I is blocked</strong> → fat oxidation is OFF. When fasting/stress → malonyl-CoA falls → CPT-I is open → fat oxidation is ON.</p>
+</div>`,
+    vitals:[], questions:[]
+  },
+
+  // ── BETA OXIDATION: MCQ ────────────────────────────────────────────────────
+  {
+    id:2, badge:"⚡ Beta Oxidation — MCQ", badgeClass:"badge-amber",
+    title:"Beta Oxidation: Test Yourself",
+    body:`<p style="font-size:.9rem;color:var(--muted)">Answer individually — the facilitator will reveal the answer and explanation when everyone has responded.</p>`,
+    vitals:[],
+    questions:[
+      {
+        id:"q_bo1", type:"mcq",
+        text:"What molecule inhibits CPT-I, and what does this mean for beta oxidation?",
+        options:[
+          "Acetyl-CoA — high acetyl-CoA blocks CPT-I, turning off fat oxidation",
+          "Malonyl-CoA — high malonyl-CoA (fed state) blocks CPT-I, turning off fat oxidation",
+          "NADH — high NADH from the TCA cycle blocks CPT-I",
+          "Glucagon — glucagon directly inhibits CPT-I to prevent fat breakdown"
+        ],
+        correct:1,
+        expl:`<strong>B — Malonyl-CoA</strong> is the inhibitor of CPT-I. It is produced when insulin is high (fed state), signalling that the body has plenty of fuel and doesn't need to burn fat.
+<ul>
+<li>High malonyl-CoA → CPT-I blocked → fatty acids can't enter mitochondria → beta oxidation OFF</li>
+<li>Low malonyl-CoA (fasting, exercise, no insulin) → CPT-I open → beta oxidation ON</li>
+<li>This is why DKA happens in T1DM — no insulin = no malonyl-CoA = CPT-I fully open = massive fat oxidation = ketone overflow</li>
+</ul>`,
+        facNote:"Key teaching point: malonyl-CoA is made by acetyl-CoA carboxylase, which needs insulin to be active. So insulin controls beta oxidation indirectly — there's no insulin receptor on CPT-I directly."
+      },
+      {
+        id:"q_bo2", type:"mcq",
+        text:"Palmitate (C16 fatty acid) undergoes beta oxidation. How many cycles does it go through, and how many acetyl-CoA molecules does it produce?",
+        options:[
+          "6 cycles → 6 acetyl-CoA",
+          "7 cycles → 7 acetyl-CoA",
+          "7 cycles → 8 acetyl-CoA",
+          "8 cycles → 8 acetyl-CoA"
+        ],
+        correct:2,
+        expl:`<strong>C — 7 cycles → 8 acetyl-CoA.</strong>
+<ul>
+<li>Each cycle removes 2 carbons as acetyl-CoA</li>
+<li>C16 ÷ 2 = 8 acetyl-CoA total</li>
+<li>But you only need <strong>7 cycles</strong> — the last cycle splits the final 4-carbon piece into 2 × acetyl-CoA simultaneously</li>
+<li>7 cycles also gives 7 FADH₂ + 7 NADH → total ~106 ATP from palmitate</li>
+</ul>`,
+        facNote:"The classic trick question. Students often say 8 cycles because 16÷2=8, but the last cycle splits C4 into 2×acetyl-CoA without needing an extra cycle. Worth drawing this out."
+      }
+    ]
+  },
+
+  // ── CORI CYCLE: TEACH ─────────────────────────────────────────────────────
+  {
+    id:3, badge:"🔄 Cori Cycle — Teaching", badgeClass:"badge-green",
+    title:"The Cori Cycle: Muscle & Liver Teamwork",
+    body:`
+<div style="background:#EEF7F2;border-left:4px solid #1D9E75;border-radius:0 8px 8px 0;padding:.85rem 1rem;margin-bottom:.85rem">
+  <p style="font-size:.88rem;color:#085041;font-weight:600;margin-bottom:.25rem">The big idea</p>
+  <p style="font-size:.9rem;color:#085041;line-height:1.65">During intense exercise, muscle makes <strong>lactate faster than it can process it</strong>. The Cori cycle ships that lactate to the liver, which converts it back to glucose and sends it back to muscle. It's an interorgan recycling system.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-bottom:.85rem">
+  <div style="background:#EEF7F2;border:1px solid #5DCAA5;border-radius:8px;padding:.75rem">
+    <p style="font-size:.78rem;font-weight:700;color:#0F6E56;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em">Muscle</p>
+    <p style="font-size:.8rem;color:#085041;line-height:1.6">Glucose → Pyruvate<br>↓ (low O₂ / high work)<br>Pyruvate → <strong>Lactate</strong><br>Lactate → bloodstream<br><span style="color:#1D9E75;font-weight:600">Gains: 2 ATP</span></p>
+  </div>
+  <div style="text-align:center">
+    <div style="font-size:.75rem;color:#1D9E75;font-weight:700">LACTATE<br>→</div>
+    <div style="height:16px"></div>
+    <div style="font-size:.75rem;color:#2E86AB;font-weight:700">←<br>GLUCOSE</div>
+  </div>
+  <div style="background:#E6F1FB;border:1px solid #85B7EB;border-radius:8px;padding:.75rem">
+    <p style="font-size:.78rem;font-weight:700;color:#185FA5;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.05em">Liver</p>
+    <p style="font-size:.8rem;color:#0C447C;line-height:1.6">Lactate → Pyruvate<br>↓ (gluconeogenesis)<br>Pyruvate → <strong>Glucose</strong><br>Glucose → bloodstream<br><span style="color:#E24B4A;font-weight:600">Costs: 6 ATP</span></p>
+  </div>
+</div>
+
+<div style="background:#FEF9EC;border:1px solid #EF9F27;border-radius:8px;padding:.75rem;margin-bottom:.75rem">
+  <p style="font-size:.85rem;color:#633806;line-height:1.65"><strong>⚖️ Energy economics:</strong> Muscle gains 2 ATP. Liver spends 6 ATP. <strong>Net deficit = 4 ATP per cycle</strong> — the liver subsidises muscle using energy from fat oxidation (beta oxidation powers this).</p>
+</div>
+
+<div style="background:#FCEBEB;border:1px solid #F09595;border-radius:8px;padding:.75rem">
+  <p style="font-size:.83rem;color:#791F1F;line-height:1.65"><strong>💊 Clinical — Metformin:</strong> Metformin inhibits hepatic gluconeogenesis → lactate can't be converted to glucose → lactate accumulates. In renal failure, metformin accumulates → risk of <strong>lactic acidosis</strong>.</p>
+</div>`,
+    vitals:[], questions:[]
+  },
+
+  // ── CORI CYCLE: MCQ ───────────────────────────────────────────────────────
+  {
+    id:4, badge:"🔄 Cori Cycle — MCQ", badgeClass:"badge-green",
+    title:"Cori Cycle: Test Yourself",
+    body:`<p style="font-size:.9rem;color:var(--muted)">Answer individually — facilitator will reveal and discuss.</p>`,
+    vitals:[],
+    questions:[
+      {
+        id:"q_cc1", type:"mcq",
+        text:"In the Cori cycle, how much ATP does the liver spend to regenerate 1 glucose molecule from 2 lactate molecules?",
+        options:["2 ATP","4 ATP","6 ATP","8 ATP"],
+        correct:2,
+        expl:`<strong>C — 6 ATP equivalents</strong> (4 ATP + 2 GTP) are consumed during gluconeogenesis to produce 1 glucose from 2 pyruvate.
+<ul>
+<li>Muscle only gained 2 ATP from glycolysis to produce that lactate</li>
+<li>Net deficit = 4 ATP per cycle — the liver pays this from beta oxidation of fatty acids</li>
+<li>The Cori cycle doesn't generate energy overall — it transfers the metabolic burden from muscle to liver</li>
+</ul>`,
+        facNote:"Ask the group: where does the liver get those 6 ATP? Answer: from beta oxidation. This is the first connection between the two pathways."
+      },
+      {
+        id:"q_cc2", type:"mcq",
+        text:"Which enzyme converts lactate back to pyruvate in the liver, and what drives the reaction in that direction?",
+        options:[
+          "Pyruvate kinase — driven by high ATP in the liver",
+          "Lactate dehydrogenase (H-type) — driven by low NADH/NAD⁺ ratio in the liver",
+          "Pyruvate carboxylase — activated by acetyl-CoA",
+          "Lactate dehydrogenase (M-type) — driven by high NADH in exercising muscle"
+        ],
+        correct:1,
+        expl:`<strong>B — LDH (H-type isoform)</strong> in the liver converts lactate → pyruvate.
+<ul>
+<li>LDH is reversible — direction depends on NADH/NAD⁺ ratio and isoform</li>
+<li><strong>M-type (muscle)</strong>: favours pyruvate → lactate (high NADH in anaerobic muscle drives this)</li>
+<li><strong>H-type (heart/liver)</strong>: favours lactate → pyruvate (liver has lower NADH ratio, different kinetics)</li>
+<li>Option D describes the muscle direction — common distractor</li>
+</ul>`,
+        facNote:"LDH isoforms are a classic exam point. The key concept is that the same reaction runs in opposite directions in muscle vs liver based on local conditions."
+      }
+    ]
+  },
+
+  // ── GLUCONEOGENESIS: TEACH ────────────────────────────────────────────────
+  {
+    id:5, badge:"🏭 Gluconeogenesis — Teaching", badgeClass:"badge-blue",
+    title:"Gluconeogenesis: Making Glucose from Scratch",
+    body:`
+<div style="background:#E6F1FB;border-left:4px solid #2E86AB;border-radius:0 8px 8px 0;padding:.85rem 1rem;margin-bottom:.85rem">
+  <p style="font-size:.88rem;color:#0C447C;font-weight:600;margin-bottom:.25rem">The big idea</p>
+  <p style="font-size:.9rem;color:#0C447C;line-height:1.65">Gluconeogenesis (GNG) is the liver's ability to <strong>make glucose from non-sugar sources</strong>. It kicks in after ~18–24 hours of fasting when glycogen runs out. The brain needs glucose — GNG keeps it supplied.</p>
+</div>
+
+<div style="margin-bottom:.85rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Substrates — what goes IN</p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.82rem;line-height:1.5"><strong style="color:#2E86AB">Lactate</strong><br><span style="color:var(--muted)">from Cori cycle</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.82rem;line-height:1.5"><strong style="color:#2E86AB">Glycerol</strong><br><span style="color:var(--muted)">from fat breakdown</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.82rem;line-height:1.5"><strong style="color:#2E86AB">Alanine</strong><br><span style="color:var(--muted)">from muscle protein</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.82rem;line-height:1.5"><strong style="color:#2E86AB">Glutamine</strong><br><span style="color:var(--muted)">from gut/muscle</span></p></div>
+  </div>
+</div>
+
+<div style="margin-bottom:.85rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">4 unique enzymes (bypass irreversible glycolysis steps)</p>
+  <div style="display:grid;grid-template-columns:1fr;gap:5px">
+    <div style="background:var(--bg);border-left:3px solid #2E86AB;border-radius:0 6px 6px 0;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem;font-weight:600;color:var(--text)">Pyruvate carboxylase</span>
+      <span style="font-size:.78rem;color:var(--muted)">Pyruvate → OAA</span>
+    </div>
+    <div style="background:var(--bg);border-left:3px solid #2E86AB;border-radius:0 6px 6px 0;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem;font-weight:600;color:var(--text)">PEPCK</span>
+      <span style="font-size:.78rem;color:var(--muted)">OAA → PEP</span>
+    </div>
+    <div style="background:var(--bg);border-left:3px solid #2E86AB;border-radius:0 6px 6px 0;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem;font-weight:600;color:var(--text)">Fructose-1,6-bisphosphatase</span>
+      <span style="font-size:.78rem;color:var(--muted)">F1,6BP → F6P</span>
+    </div>
+    <div style="background:var(--bg);border-left:3px solid #2E86AB;border-radius:0 6px 6px 0;padding:.5rem .75rem;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:.82rem;font-weight:600;color:var(--text)">Glucose-6-phosphatase</span>
+      <span style="font-size:.78rem;color:var(--muted)">G6P → Glucose (liver only!)</span>
+    </div>
+  </div>
+</div>
+
+<div style="background:#FCEBEB;border:1px solid #F09595;border-radius:8px;padding:.75rem">
+  <p style="font-size:.83rem;color:#791F1F;line-height:1.65"><strong>⚠️ Important:</strong> Fat <strong>cannot</strong> make glucose. Acetyl-CoA from beta oxidation enters the TCA cycle but produces no net glucose — both carbons are lost as CO₂. This is why prolonged starvation causes muscle wasting — amino acids become the key substrate.</p>
+</div>`,
+    vitals:[], questions:[]
+  },
+
+  // ── GLUCONEOGENESIS: MCQ ──────────────────────────────────────────────────
+  {
+    id:6, badge:"🏭 Gluconeogenesis — MCQ", badgeClass:"badge-blue",
+    title:"Gluconeogenesis: Test Yourself",
+    body:`<p style="font-size:.9rem;color:var(--muted)">Answer individually — facilitator will reveal and discuss.</p>`,
+    vitals:[],
+    questions:[
+      {
+        id:"q_gng1", type:"mcq",
+        text:"Which enzyme allows the LIVER to release free glucose into the bloodstream — and why can't skeletal muscle do the same?",
+        options:[
+          "PEPCK — muscle lacks PEPCK so cannot complete gluconeogenesis",
+          "Pyruvate carboxylase — muscle mitochondria cannot convert pyruvate to OAA",
+          "Glucose-6-phosphatase — muscle lacks this enzyme so G6P stays trapped locally",
+          "Fructose-1,6-bisphosphatase — muscle cannot reverse the PFK-1 step"
+        ],
+        correct:2,
+        expl:`<strong>C — Glucose-6-phosphatase (G6Pase)</strong> is expressed only in liver and kidney. It converts G6P → free glucose that can be exported into blood.
+<ul>
+<li>Muscle lacks G6Pase → G6P stays as G6P → enters glycolysis locally → muscle glycogen is for muscle use only</li>
+<li>This is why only the liver (and kidney) can raise blood glucose via GNG</li>
+<li>Von Gierke disease (GSD Type Ia) = G6Pase deficiency → severe fasting hypoglycaemia + hepatomegaly</li>
+</ul>`,
+        facNote:"Classic exam trap. Students know muscle has glycogen but don't always know WHY it can't donate to blood glucose. G6Pase is the answer."
+      },
+      {
+        id:"q_gng2", type:"mcq",
+        text:"A patient with Type 2 diabetes has persistent fasting hyperglycaemia despite eating nothing overnight. What is the most likely metabolic explanation?",
+        options:[
+          "Excess dietary glucose stored as glycogen is being released",
+          "Insulin resistance → failure to suppress hepatic gluconeogenesis → liver keeps making glucose overnight",
+          "Glucagon deficiency causes excessive glucose uptake by muscle",
+          "Increased renal glucose reabsorption prevents glycosuria"
+        ],
+        correct:1,
+        expl:`<strong>B — Insulin resistance</strong> means the liver doesn't respond normally to insulin's suppressive signal on GNG. Normally insulin suppresses PEPCK and G6Pase gene expression (via FoxO1). In T2DM, this fails → liver continues GNG overnight → fasting hyperglycaemia ("dawn phenomenon").
+<ul>
+<li>This is the key mechanism metformin targets — it inhibits hepatic GNG via AMPK activation</li>
+<li>Fasting BGL reflects overnight GNG rate, not recent food intake</li>
+</ul>`,
+        facNote:"This directly connects the biochemistry to a common clinical scenario. Ask: what drug targets this exact mechanism? (Metformin via AMPK → inhibits PEPCK/G6Pase expression)"
+      }
+    ]
+  },
+
+  // ── ADRENERGIC: TEACH ─────────────────────────────────────────────────────
+  {
+    id:7, badge:"💊 Adrenergic Response — Teaching", badgeClass:"badge-red",
+    title:"Adrenergic Response: Stress & Fuel Mobilisation",
+    body:`
+<div style="background:#FCEBEB;border-left:4px solid #E24B4A;border-radius:0 8px 8px 0;padding:.85rem 1rem;margin-bottom:.85rem">
+  <p style="font-size:.88rem;color:#791F1F;font-weight:600;margin-bottom:.25rem">The big idea</p>
+  <p style="font-size:.9rem;color:#791F1F;line-height:1.65">When you're stressed, exercising, or hypoglycaemic, your body releases <strong>adrenaline and noradrenaline</strong> from the adrenal medulla. These catecholamines rapidly mobilise fuel stores — glucose from glycogen, fatty acids from fat — to power the emergency response.</p>
+</div>
+
+<div style="margin-bottom:.85rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">The signal cascade</p>
+  <div style="display:flex;flex-direction:column;gap:5px">
+    <div style="background:var(--bg);border-radius:8px;padding:.55rem .85rem;display:flex;align-items:center;gap:8px">
+      <span style="background:#FCEBEB;color:#A32D2D;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0">1</span>
+      <span style="font-size:.83rem">Stress/hypoglycaemia → hypothalamus → adrenal medulla</span>
+    </div>
+    <div style="background:var(--bg);border-radius:8px;padding:.55rem .85rem;display:flex;align-items:center;gap:8px">
+      <span style="background:#FCEBEB;color:#A32D2D;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0">2</span>
+      <span style="font-size:.83rem">Adrenaline released → binds β-adrenergic receptor (GPCR)</span>
+    </div>
+    <div style="background:var(--bg);border-radius:8px;padding:.55rem .85rem;display:flex;align-items:center;gap:8px">
+      <span style="background:#FCEBEB;color:#A32D2D;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0">3</span>
+      <span style="font-size:.83rem">Gαs → adenylyl cyclase ↑ → cAMP ↑ → PKA activated</span>
+    </div>
+    <div style="background:#FEF3E0;border-radius:8px;padding:.55rem .85rem;display:flex;align-items:center;gap:8px">
+      <span style="background:#FEF3E0;color:#854F0B;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0">4a</span>
+      <span style="font-size:.83rem"><strong>PKA → HSL</strong> (hormone-sensitive lipase) → triglycerides → fatty acids released from adipose</span>
+    </div>
+    <div style="background:#FEF3E0;border-radius:8px;padding:.55rem .85rem;display:flex;align-items:center;gap:8px">
+      <span style="background:#FEF3E0;color:#854F0B;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0">4b</span>
+      <span style="font-size:.83rem"><strong>PKA → Glycogen phosphorylase kinase</strong> → glycogenolysis → glucose released from liver</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-bottom:.75rem">
+  <p style="font-size:.78rem;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.5rem">Key receptors — must know</p>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.8rem;line-height:1.55"><strong style="color:#A32D2D">β₁</strong> — Heart<br><span style="color:var(--muted)">↑ HR, ↑ contractility</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.8rem;line-height:1.55"><strong style="color:#A32D2D">β₂</strong> — Bronchi, adipose<br><span style="color:var(--muted)">Bronchodilation, lipolysis</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.8rem;line-height:1.55"><strong style="color:#A32D2D">α₁</strong> — Vasculature<br><span style="color:var(--muted)">Vasoconstriction</span></p></div>
+    <div style="background:var(--bg);border-radius:8px;padding:.6rem .75rem"><p style="font-size:.8rem;line-height:1.55"><strong style="color:#A32D2D">α₂</strong> — Pancreas β-cells<br><span style="color:var(--muted)">↓ Insulin secretion</span></p></div>
+  </div>
+</div>
+
+<div style="background:#FCEBEB;border:1px solid #F09595;border-radius:8px;padding:.75rem">
+  <p style="font-size:.83rem;color:#791F1F;line-height:1.65"><strong>⚠️ Clinical — Phaeochromocytoma:</strong> Tumour of adrenal medulla → uncontrolled catecholamine release → hypertension, tachycardia, hyperglycaemia. Give <strong>α-blocker FIRST</strong> then β-blocker — never β first (risks unopposed α → hypertensive crisis).</p>
+</div>`,
+    vitals:[], questions:[]
+  },
+
+  // ── ADRENERGIC: MCQ ───────────────────────────────────────────────────────
+  {
+    id:8, badge:"💊 Adrenergic Response — MCQ", badgeClass:"badge-red",
+    title:"Adrenergic Response: Test Yourself",
+    body:`<p style="font-size:.9rem;color:var(--muted)">Answer individually — facilitator will reveal and discuss.</p>`,
+    vitals:[],
+    questions:[
+      {
+        id:"q_adr1", type:"mcq",
+        text:"A patient with a phaeochromocytoma is about to have surgery. The anaesthetist insists on starting a β-blocker before an α-blocker. Why is this dangerous?",
+        options:[
+          "β-blockers cause hypoglycaemia by blocking glycogenolysis",
+          "β-blockers remove β₂ vasodilation while α₁ vasoconstriction remains — unopposed α causes severe hypertensive crisis",
+          "β-blockers increase adrenaline release by blocking negative feedback",
+          "β-blockers cause bronchospasm which is the main risk during anaesthesia"
+        ],
+        correct:1,
+        expl:`<strong>B — Unopposed α-stimulation.</strong>
+<ul>
+<li>Adrenaline acts on both α₁ (vasoconstriction) and β₂ (vasodilation) receptors simultaneously</li>
+<li>These effects partially cancel out — maintaining manageable BP</li>
+<li>If you block β₂ first → vasodilation removed → only α₁ vasoconstriction remains → severe hypertension → stroke/MI risk</li>
+<li>Correct order: <strong>α-blocker (phenoxybenzamine) for 1–2 weeks FIRST</strong>, then add β-blocker</li>
+</ul>`,
+        facNote:"This is a high-yield exam and clinical scenario. The mechanism is pure receptor pharmacology. Ask: what symptoms would you see in phaeochromocytoma? (paroxysmal hypertension, headache, sweating, tachycardia, hyperglycaemia)"
+      },
+      {
+        id:"q_adr2", type:"mcq",
+        text:"You give adrenaline IM to a patient in anaphylaxis. Through which receptor does it reverse bronchospasm, and through which does it reverse hypotension?",
+        options:[
+          "Bronchospasm: α₁ | Hypotension: β₂",
+          "Bronchospasm: β₁ | Hypotension: α₁",
+          "Bronchospasm: β₂ | Hypotension: α₁",
+          "Bronchospasm: β₂ | Hypotension: β₁"
+        ],
+        correct:2,
+        expl:`<strong>C — β₂ for bronchodilation, α₁ for vasoconstriction.</strong>
+<ul>
+<li><strong>β₂</strong> on bronchial smooth muscle → Gαs → cAMP → smooth muscle relaxation → bronchodilation</li>
+<li><strong>α₁</strong> on vascular smooth muscle → Gαq → IP₃/DAG → vasoconstriction → ↑ SVR → restores BP</li>
+<li><strong>β₁</strong> on heart → ↑ HR and contractility → also contributes to ↑ BP</li>
+<li>Route: IM into lateral thigh (vastus lateralis) — fastest absorption. Dose: 0.5mg IM adult</li>
+</ul>`,
+        facNote:"Ask the group: why IM not IV for anaphylaxis? (IV risks fatal arrhythmia from too-rapid peak concentration). Why lateral thigh not deltoid? (better absorption, less subcutaneous fat)"
+      }
+    ]
+  },
+
+  // ── INTEGRATION SUMMARY ───────────────────────────────────────────────────
+  {
+    id:9, badge:"Integration", badgeClass:"badge-purple",
+    title:"Putting It All Together",
+    body:`<p style="margin-bottom:.85rem">All four pathways work as a coordinated system. In fasting or stress, they all activate simultaneously:</p>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:.85rem">
+  <div style="background:#FEF3E0;border:1px solid #EF9F27;border-radius:8px;padding:.75rem"><p style="font-size:.82rem;color:#633806;line-height:1.6"><strong>⚡ Beta Oxidation</strong><br>FFAs → acetyl-CoA → ATP + ketones. Powers gluconeogenesis.</p></div>
+  <div style="background:#EEF7F2;border:1px solid #5DCAA5;border-radius:8px;padding:.75rem"><p style="font-size:.82rem;color:#085041;line-height:1.6"><strong>🔄 Cori Cycle</strong><br>Muscle lactate → liver → glucose. Costs 4 ATP net, paid by beta oxidation.</p></div>
+  <div style="background:#E6F1FB;border:1px solid #85B7EB;border-radius:8px;padding:.75rem"><p style="font-size:.82rem;color:#0C447C;line-height:1.6"><strong>🏭 Gluconeogenesis</strong><br>Liver makes glucose from lactate, glycerol, alanine. Keeps brain alive during fasting.</p></div>
+  <div style="background:#FCEBEB;border:1px solid #F09595;border-radius:8px;padding:.75rem"><p style="font-size:.82rem;color:#791F1F;line-height:1.6"><strong>💊 Adrenergic</strong><br>Triggers HSL (fat) + glycogenolysis (glucose) + inhibits insulin. Master activator.</p></div>
+</div>
+<div style="background:#EEEDFE;border:1px solid #AFA9EC;border-radius:8px;padding:.85rem">
+  <p style="font-size:.85rem;color:#3C3489;line-height:1.7"><strong>One sentence summary:</strong> In stress/fasting — adrenaline fires → fat releases (beta oxidation) + glycogen breaks → liver makes glucose (GNG) using lactate from muscle (Cori cycle) → brain and muscle get fuel. <strong>Insulin switches all of this off.</strong></p>
+</div>`,
+    vitals:[], questions:[]
+  }
+];
+
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const UID = (()=>{
+  let id = localStorage.getItem('uid_'+SESSION);
+  if(!id){ id='u'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); localStorage.setItem('uid_'+SESSION,id); }
+  return id;
+})();
+let myName='', myRole='', pollTimer=null, lastScene=-1, lastRevealed={};
+
+// ══════════════════════════════════════════════════════════
+// FIREBASE HELPERS
+// ══════════════════════════════════════════════════════════
+async function fbGet(p){ try{ const r=await fetch(`${FB_URL}/${SESSION}/${p}.json`); return r.ok?r.json():null; }catch(e){return null;} }
+async function fbSet(p,d){ try{ await fetch(`${FB_URL}/${SESSION}/${p}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); }catch(e){} }
+async function fbPatch(p,d){ try{ await fetch(`${FB_URL}/${SESSION}/${p}.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}); }catch(e){} }
+
+// ══════════════════════════════════════════════════════════
+// VIEW UTILS
+// ══════════════════════════════════════════════════════════
+function show(id){ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function showErr(msg){ const e=document.getElementById('join-err'); e.textContent=msg; e.style.display='block'; }
+function toggleFacLogin(){ const b=document.getElementById('fac-login-box'); b.style.display=b.style.display==='block'?'none':'block'; }
+
+// ══════════════════════════════════════════════════════════
+// JOIN HANDLERS
+// ══════════════════════════════════════════════════════════
+async function joinAsStudent(){
+  const n=document.getElementById('join-name').value.trim();
+  if(!n){ showErr('Please enter your name'); return; }
+  myName=n; myRole='student';
+  localStorage.setItem('myName_'+SESSION,n);
+  await fbSet('students/'+UID,{name:n,joinedAt:Date.now(),answers:{},discussions:{},seen:Date.now()});
+  document.getElementById('wait-greeting').textContent='Welcome, '+n+'!';
+  document.getElementById('topbar-name').textContent=n;
+  show('wait-view');
+  startPoll(studentPoll,2500);
+}
+
+async function joinAsFacilitator(){
+  const p=document.getElementById('fac-pass').value;
+  if(p!==FAC_PASS){ showErr('Incorrect password'); return; }
+  myRole='facilitator';
+  show('fac-view');
+  startPoll(facPoll,2000);
+}
+
+// ══════════════════════════════════════════════════════════
+// POLLING
+// ══════════════════════════════════════════════════════════
+function startPoll(fn,ms){ if(pollTimer)clearInterval(pollTimer); pollTimer=setInterval(fn,ms); fn(); }
+
+async function studentPoll(){
+  await fbPatch('students/'+UID,{seen:Date.now()});
+  const ctrl=await fbGet('control');
+  if(!ctrl||!ctrl.started){
+    const stus=await fbGet('students');
+    renderLobby(stus);
+    return;
+  }
+  const sc=ctrl.currentScene||0, rev=ctrl.revealed||{};
+  if(!document.getElementById('student-view').classList.contains('active')){ show('student-view'); buildDots(); }
+  if(sc!==lastScene){ lastScene=sc; await renderStudentScene(sc,rev); }
+  else {
+    SCENES[sc].questions.forEach(q=>{ if(rev[q.id]&&!lastRevealed[q.id]){ lastRevealed[q.id]=true; renderStudentScene(sc,rev); } });
+  }
+}
+
+async function facPoll(){
+  const [ctrl,stus]=await Promise.all([fbGet('control'),fbGet('students')]);
+  renderFac(ctrl,stus);
+}
+
+// ══════════════════════════════════════════════════════════
+// STUDENT RENDERING
+// ══════════════════════════════════════════════════════════
+function renderLobby(stus){
+  const el=document.getElementById('lobby-list');
+  if(!stus){ el.innerHTML='<li><span class="dot-off"></span>No one yet</li>'; return; }
+  el.innerHTML=Object.values(stus).map(s=>`<li><span class="dot-live"></span>${s.name}</li>`).join('');
+}
+
+function buildDots(){
+  document.getElementById('sdots').innerHTML=SCENES.map((_,i)=>`<div class="sdot" id="sd${i}"></div>`).join('');
+}
+
+async function renderStudentScene(sci,revealed){
+  lastRevealed={...revealed};
+  const scene=SCENES[sci];
+  SCENES.forEach((_,i)=>{ const d=document.getElementById('sd'+i); if(d)d.className='sdot'+(i<sci?' done':i===sci?' active':''); });
+  const me=await fbGet('students/'+UID);
+  const myAns=(me&&me.answers)||{};
+  const myDisc=(me&&me.discussions)||{};
+  let html=`<span class="badge ${scene.badgeClass}">${scene.badge}</span><h2 style="margin-bottom:.6rem">${scene.title}</h2><div class="card">${scene.body}`;
+  if(scene.vitals&&scene.vitals.length) html+=`<div class="vitals">${scene.vitals.map(v=>`<div class="vital"><div class="vital-label">${v.l}</div><div class="vital-val ${v.s}">${v.v}</div></div>`).join('')}</div>`;
+  html+='</div>';
+  scene.questions.forEach(q=>{
+    html+= q.type==='mcq' ? renderMCQ(q,myAns[q.id],revealed[q.id]) : renderDisc(q,myDisc[q.id]);
+  });
+  if(sci===SCENES.length-1) html+=`<div class="banner b-info" style="margin-top:.5rem">Session complete — well done! Check the shared screen for the debrief summary.</div>`;
+  document.getElementById('s-content').innerHTML=html;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function renderMCQ(q,myAns,revealed){
+  const locked=myAns!==undefined&&myAns!==null;
+  let h=`<div class="q-card"><div class="q-label">Multiple choice</div><div class="q-text">${q.text}</div>`;
+  q.options.forEach((opt,i)=>{
+    let cls='mcq-option';
+    if(locked&&i===myAns) cls+=' chosen';
+    if(revealed){ if(i===q.correct) cls+=' reveal-correct'; else if(locked&&i===myAns&&i!==q.correct) cls+=' reveal-wrong'; }
+    h+=`<button class="${cls}" ${locked?'disabled':''} onclick="submitMCQ('${q.id}',${i})">${String.fromCharCode(65+i)}. ${opt}</button>`;
+  });
+  if(!locked) h+='';
+  else if(!revealed) h+=`<div class="banner b-pending">Answer submitted — waiting for facilitator to reveal...</div>`;
+  else h+=`<div class="banner ${myAns===q.correct?'b-correct':'b-wrong'}">${myAns===q.correct?'✓ Correct!':'✗ Incorrect'}</div><div class="explanation">${q.expl}</div>`;
+  h+='</div>'; return h;
+}
+
+function renderDisc(q,myText){
+  const locked=myText&&myText.trim().length>0;
+  let h=`<div class="q-card"><div class="q-label">Group discussion</div><div class="q-text">Your response</div><p class="disc-prompt">${q.text}</p>`;
+  if(!locked){
+    h+=`<textarea id="ta-${q.id}" placeholder="Type your response here..." rows="3"></textarea>`;
+    h+=`<div style="margin-top:.6rem"><button class="btn btn-teal" onclick="submitDisc('${q.id}')">Submit response →</button></div>`;
+  } else {
+    h+=`<div class="banner b-info">✓ Submitted — see the shared screen for discussion.</div>`;
+    h+=`<div style="background:var(--bg);border-radius:8px;padding:.75rem;font-size:.88rem;color:var(--muted);line-height:1.65;margin-top:.25rem"><em>${myText}</em></div>`;
+  }
+  h+='</div>'; return h;
+}
+
+async function submitMCQ(qid,ans){
+  await fbPatch('students/'+UID+'/answers',{[qid]:ans});
+  const ctrl=await fbGet('control');
+  if(ctrl) renderStudentScene(ctrl.currentScene||0,ctrl.revealed||{});
+}
+
+async function submitDisc(qid){
+  const ta=document.getElementById('ta-'+qid);
+  const txt=ta?ta.value.trim():'';
+  if(!txt)return;
+  await fbPatch('students/'+UID+'/discussions',{[qid]:txt});
+  const ctrl=await fbGet('control');
+  if(ctrl) renderStudentScene(ctrl.currentScene||0,ctrl.revealed||{});
+}
+
+// ══════════════════════════════════════════════════════════
+// FACILITATOR RENDERING
+// ══════════════════════════════════════════════════════════
+function renderFac(ctrl,stus){
+  const started=ctrl&&ctrl.started;
+  const sci=(ctrl&&ctrl.currentScene)||0;
+  const rev=(ctrl&&ctrl.revealed)||{};
+  const now=Date.now();
+  const arr=stus?Object.values(stus):[];
+  const online=arr.filter(s=>s.seen&&(now-s.seen)<9000);
+  document.getElementById('fc-online').textContent=online.length;
+  document.getElementById('fc-scene').textContent=started?(sci+1)+'/'+SCENES.length:'—';
+  document.getElementById('btn-start').disabled=!!started;
+  document.getElementById('btn-next').disabled=!started||sci>=SCENES.length-1;
+  // roster
+  const scene=SCENES[Math.min(sci,SCENES.length-1)];
+  if(arr.length===0){ document.getElementById('fc-roster').innerHTML='<p style="font-size:.8rem;color:#4A6A8A">No students yet</p>'; }
+  else {
+    document.getElementById('fc-roster').innerHTML=arr.map(s=>{
+      const live=s.seen&&(now-s.seen)<9000;
+      const ans=s.answers||{}, discs=s.discussions||{};
+      const pills=scene.questions.map(q=>{
+        if(q.type==='mcq'&&ans[q.id]!==undefined&&ans[q.id]!==null){
+          const ok=ans[q.id]===q.correct;
+          return `<span class="ap ${rev[q.id]?(ok?'ok':'no'):''}">${String.fromCharCode(65+ans[q.id])}</span>`;
+        }
+        if(q.type==='discussion'&&discs[q.id]) return `<span class="ap sub">✓</span>`;
+        return `<span class="ap" style="opacity:.25">—</span>`;
+      }).join('');
+      return `<div class="s-row"><span class="${live?'dot-live':'dot-off'}"></span><span class="s-name">${s.name}</span>${pills}</div>`;
+    }).join('');
+  }
+  // main
+  if(!started){ document.getElementById('fc-main').innerHTML=`<p style="color:#4A6A8A;font-size:.9rem">${online.length} student(s) in lobby. Press ▶ Start when ready.</p>`; return; }
+  let html=`<div style="display:flex;align-items:baseline;gap:.75rem;margin-bottom:1.1rem"><h2 style="color:#E8F0F8;font-size:1.1rem">${scene.title}</h2><span style="font-size:.75rem;color:#4A6A8A">Scene ${sci+1} of ${SCENES.length}</span></div>`;
+  if(scene.questions.length===0){
+    html+=`<div class="fac-card"><p style="color:#5A7A9A;font-size:.88rem">No questions this scene. Students are reading the case. Click <strong>Next Scene →</strong> when ready.</p></div>`;
+  }
+  scene.questions.forEach(q=>{
+    const sAns=arr.map(s=>(s.answers||{})[q.id]);
+    const sDisc=arr.filter(s=>(s.discussions||{})[q.id]).map(s=>({name:s.name,text:s.discussions[q.id]}));
+    const answered=sAns.filter(a=>a!==undefined&&a!==null).length;
+    html+=`<div class="fac-card">`;
+    if(q.type==='mcq'){
+      html+=`<div class="fac-label">${q.id.toUpperCase()} · Multiple choice</div>`;
+      html+=`<p style="font-size:.85rem;color:#C8D8E8;margin-bottom:.85rem;line-height:1.55">${q.text}</p>`;
+      q.options.forEach((opt,i)=>{
+        const cnt=sAns.filter(a=>a===i).length;
+        const pct=arr.length>0?Math.round(cnt/arr.length*100):0;
+        html+=`<div class="dist-row"><span class="dist-lbl">${String.fromCharCode(65+i)}</span><div class="dist-track"><div class="dist-fill ${i===q.correct&&rev[q.id]?'cf':''}" style="width:${pct}%"></div></div><span class="dist-n">${cnt}</span><span style="font-size:.7rem;color:#4A6A8A;margin-left:2px">${i===q.correct?'✓':''}</span></div>`;
+      });
+      html+=`<div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;margin-top:.75rem">`;
+      html+=`<span style="font-size:.78rem;color:#4A6A8A">${answered} / ${arr.length} answered</span>`;
+      if(!rev[q.id]) html+=`<button class="fac-btn fb-green" style="display:inline-block;width:auto;padding:.4rem .9rem;font-size:.8rem;margin:0" onclick="facReveal('${q.id}')">Reveal answer</button>`;
+      else html+=`<span class="reveal-done">✓ Answer revealed</span>`;
+      html+=`</div>`;
+    } else if(q.type==='discussion'){
+      html+=`<div class="fac-label">${q.id.toUpperCase()} · Discussion</div>`;
+      html+=`<p style="font-size:.85rem;color:#C8D8E8;margin-bottom:.75rem;line-height:1.55">${q.text}</p>`;
+      html+=`<p style="font-size:.78rem;color:#4A6A8A;margin-bottom:.5rem">${sDisc.length} / ${arr.length} responded</p>`;
+      if(sDisc.length>0) html+=sDisc.map(d=>`<div class="disc-resp"><div class="disc-resp-name">${d.name}</div><div class="disc-resp-text">${d.text}</div></div>`).join('');
+      else html+=`<p style="font-size:.8rem;color:#3A5A7A;font-style:italic">No responses yet...</p>`;
+    }
+    if(q.facNote) html+=`<div class="fac-note-box"><div class="fac-note-lbl">Facilitator note</div><div class="fac-note-text">${q.facNote}</div></div>`;
+    html+='</div>';
+  });
+  document.getElementById('fc-main').innerHTML=html;
+}
+
+// ══════════════════════════════════════════════════════════
+// FACILITATOR CONTROLS
+// ══════════════════════════════════════════════════════════
+async function facStart(){ await fbSet('control',{started:true,currentScene:0,revealed:{}}); }
+async function facNext(){ const c=await fbGet('control'); const n=Math.min(((c&&c.currentScene)||0)+1,SCENES.length-1); await fbPatch('control',{currentScene:n}); }
+async function facReveal(qid){ await fbPatch('control/revealed',{[qid]:true}); }
+async function facReset(){ if(!confirm('Reset session? This clears all student data.'))return; await fbSet('control',{started:false,currentScene:0,revealed:{}}); await fbSet('students',null); }
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+(function init(){
+  show('join-view');
+  const saved=localStorage.getItem('myName_'+SESSION);
+  if(saved) document.getElementById('join-name').value=saved;
+  document.getElementById('join-name').addEventListener('keydown',e=>{ if(e.key==='Enter')joinAsStudent(); });
+  document.getElementById('fac-pass').addEventListener('keydown',e=>{ if(e.key==='Enter')joinAsFacilitator(); });
+})();
+</script>
+</body>
+</html>
